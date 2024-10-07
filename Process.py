@@ -8,7 +8,7 @@ from recognition import capture_all_positions_thread, recogniseif_firearm
 from fire_data import KEY_DATA
 import asyncio
 import numpy as np
-import numba
+from pyopdll import OP
 
 class ProcessClass:
     _instance_lock = threading.Lock()
@@ -44,6 +44,7 @@ class ProcessClass:
         self.ScopeData = self.get_config_data('s')
         self.GunsName = None
         self.added = False
+        self.op = OP()
 
     def move_mouse(self, x, y):
         self._gd.mouse_R(x, y)
@@ -257,6 +258,7 @@ class ProcessClass:
             # print(recoil, end=", ")  # 打印 recoil，并在末尾加上逗号和空格
             recoil_list.append(recoil)  # 将每次迭代得到的 recoil 添加到列表中
             self._gd.mouse_R(0, recoil)
+            # self.op.MoveR(0,recoil)
             latency = self.Computation_latency(9)
             time.sleep(latency)
         Emit('x', (False,))
@@ -272,6 +274,7 @@ class ProcessClass:
             # print(recoil, end=", ")  # 打印 recoil，并在末尾加上逗号和空格
             recoil_list.append(recoil)  # 将每次迭代得到的 recoil 添加到列表中
             self._gd.mouse_R(0, recoil)
+            # self.op.MoveR(0, recoil)
             latency = self.Computation_latency(100)
             time.sleep(latency)
         Emit('x', (False,))

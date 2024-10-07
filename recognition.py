@@ -2,12 +2,10 @@ import cv2
 import mss
 import os
 import time
-import pyautogui
 import asyncio
-from numba import jit
 from resolution_setting import RESOLUTION_SETTINGS, GUNS_REOLUTION_SETTINGS, Click
 import numpy as np
-
+from PIL import ImageGrab
 
 def MSS_Img(Values):
     x1, y1, x2, y2 = Values
@@ -18,7 +16,6 @@ def MSS_Img(Values):
         img_gray = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)  # 转换为灰度图
     return img_gray
 
-@jit(nopython=True)
 def compute_matches_mask(matches, distance_threshold):
     matchesMask = np.zeros((len(matches), 2), dtype=np.int32)
     matchedPoints1 = 0
@@ -34,7 +31,6 @@ def compute_matches_mask(matches, distance_threshold):
 def match_sift(img1, img2):
     # 创建sift检测器
     sift = cv2.SIFT_create()
-
     # 查找监测点和匹配符
     kp1, des1 = sift.detectAndCompute(img1, None)
     kp2, des2 = sift.detectAndCompute(img2, None)
@@ -50,7 +46,7 @@ def match_sift(img1, img2):
         matches = flann.knnMatch(des1, des2, k=2)
 
         # 通过掩码方式计算有用的点
-        matches_array = np.array([[m, n] for m, n in matches], dtype=np.object)
+        matches_array = np.array([[m, n] for m, n in matches], dtype=object)
 
         matchesMask, matchedPoints1 = compute_matches_mask(matches_array, 0.7)
 
@@ -66,6 +62,15 @@ async def capture_and_compare(Data, imgs):
     Values = list(Data.values())[0]
     x1, y1, x2, y2 = Values
     roi = imgs[y1:y2, x1:x2]
+
+    # 创建或确保 test 文件夹存在
+    # if not os.path.exists('test'):
+    #     os.makedirs('test')
+    # 保存ROI图像
+    # roi_filename = f"test/captured_roi_{Keys}_{x1}_{y1}_{x2}_{y2}.png"
+    # cv2.imwrite(roi_filename, roi)
+    # print(f"Saved captured ROI image to: {roi_filename}")
+
     return Keys, roi
 
 async def capture_all_guns(pathData):
@@ -115,7 +120,9 @@ async def capture_all_positions_thread(current_res):
 
 def recogniseif_firearm(current_res):
     x1, x2 = Click.get(current_res, None)
-    r, g, b = pyautogui.pixel(x1, x2)
+    # 使用Pillow库获取屏幕像素颜色
+    screenshot = ImageGrab.grab(bbox=(x1, x2, x1 + 1, x2 + 1))
+    r, g, b = screenshot.getpixel((0, 0))
     S_Max, S_Min = 255, 200
     if S_Min <= g <= S_Max and S_Min <= r <= S_Max and S_Min <= b <= S_Max:
         return True
